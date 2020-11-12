@@ -3,9 +3,10 @@ import requests
 import re
 import logging
 import shutil
+from PIL import Image, ImageDraw, ImageFont
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.disable(logging.DEBUG)
+logging.disable(logging.INFO)
 
 logging.debug('Start of a program')
 
@@ -17,8 +18,6 @@ res.raise_for_status()
 
 countries_html_list = bs4.BeautifulSoup(res.text, 'html.parser')
 
-africa = []
-
 # name_regex = re.compile(r'[\w\s]')
 address_regex = re.compile(r'href="/(wiki/[\w%]*)')
 digit_regex = re.compile(r'>([\d\stys]*)<')
@@ -26,8 +25,23 @@ area_regex = re.compile(r'>([\d\s,]*[\styskm²]*)<')
 flag_regex = re.compile(r'//upload.wikimedia.org/wikipedia/commons/thumb/[\w\d\-_%./]*.png')
 
 
-def print_list_of_dicts(list):
-    for country in list:
+def go(continent):
+    for sekcja in range(2, 20):
+        for pozycja in range(1, 8):
+            country_in_html = countries_html_list.select(
+                '#mw-pages > div > div > div:nth-child(' + str(sekcja) + ') > ul > li:nth-child(' + str(
+                    pozycja) + ') > a')
+
+            if country_in_html:
+                name = find_name(continent, country_in_html[0].text)
+                address = find_address(continent, str(country_in_html[0]), name)
+                find_details(continent, address, name)
+
+    return
+
+
+def print_list_of_dicts(continent):
+    for country in continent:
         print("Name:\t\t" + country["name"])
         print("Capital:\t" + str(country["capital"]))
         print("Population:\t" + country["population"])
@@ -38,26 +52,26 @@ def print_list_of_dicts(list):
         print("")
 
 
-def find_name(text):
+def find_name(continent, text):
     county = {
         "name": text
     }
-    africa.append(county)
+    continent.append(county)
 
     return text
 
 
-def find_address(text, name):
+def find_address(continent, text, name):
     address = address_regex.findall(text)
 
-    for country in africa:
+    for country in continent:
         if country['name'] == name:
             country.update({'url': wikipedia_url + address[0]})
 
     return wikipedia_url + address[0]
 
 
-def find_details(url, name):
+def find_details(continent, url, name):
     res_country = requests.get(url)
     res_country.raise_for_status()
 
@@ -76,7 +90,7 @@ def find_details(url, name):
                 capitals = []
                 for j in range(0, len(value)):          # Drukuj wszystkie stolice
                     logging.info("Capital: " + value[j].text + " ")
-                    for country in africa:
+                    for country in continent:
                         if country['name'] == name:
                             capitals.append(value[j].text)
                             country.update({'capital': capitals})
@@ -86,7 +100,7 @@ def find_details(url, name):
             # print(label_not_link[0].text)
             result = digit_regex.findall(str(value_[0]))
             amount = "".join(result).strip()
-            for country in africa:
+            for country in continent:
                 if country['name'] == name:
                     country.update({'population': amount})
             logging.info("Population: " + amount)
@@ -95,7 +109,7 @@ def find_details(url, name):
             # print(label_not_link[0].text)
             result = area_regex.findall(str(value_[0]))
             amount = "".join(result).strip()
-            for country in africa:
+            for country in continent:
                 if country['name'] == name:
                     country.update({'area': amount})
             logging.info("Area: " + amount)
@@ -103,7 +117,7 @@ def find_details(url, name):
     logging.info(flag[2])
     emblem = flag_regex.findall(str(emblem[0]))
     logging.info(emblem[2])
-    for country in africa:
+    for country in continent:
         if country['name'] == name:
             country.update({'flag': flag[2]})
             country.update({'emblem': emblem[2]})
@@ -122,15 +136,42 @@ def save_images(url, kind, name):
         shutil.copyfileobj(res.raw, f)
 
 
-for sekcja in range(2, 20):
-    for pozycja in range(1, 8):
-        country_in_html = countries_html_list.select('#mw-pages > div > div > div:nth-child(' + str(sekcja) + ') > ul > li:nth-child(' + str(pozycja) + ') > a')
+def draw_a_card():
+    img = Image.new('RGB', (900, 1350))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([(0, 0), (900, 1350)], fill=(255, 255, 255), outline=0, width=50)
 
-        if country_in_html:
-            name = find_name(country_in_html[0].text)
-            address = find_address(str(country_in_html[0]), name)
-            find_details(address, name)
+    return img
 
 
+def insert_details(img, country):
+    font            = ImageFont.truetype("fonts/Comfortaa_Regular.ttf", 40)
+    coor_name       = (100, 100)
+    coor_capital    = (100, 500)
+    coor_area       = (100, 600)
+    coor_population = (100, 700)
+
+    draw = ImageDraw.Draw(img)
+    draw.text(coor_name, country['name'], fill=0, font=font)
+    draw.text(coor_capital, 'Stolica: ' + ', '.join(country['capital']), fill=0, font=font)
+    draw.text(coor_area, 'Powierzchnia: ' + country['area'], fill=0, font=font)
+    draw.text(coor_population, 'Liczba ludności: ' + country['population'], fill=0, font=font)
+
+
+# ²
+# fnt = ImageFont.truetype("fonts/Comfortaa_Regular.ttf", 30)
+# test = draw_a_card()
+# draw = ImageDraw.Draw(test)
+# draw.text((100, 100), "Powierzchnia: 2514 km²", font=fnt, fill=0)
+# test.save("test.png", 'PNG')
+
+africa = []
+go(africa)
 print_list_of_dicts(africa)
+
+for country in africa:
+    img = draw_a_card()
+    insert_details(img, country)
+    img.save("cards/" + country['name'] + ".png", "PNG")
+
 
