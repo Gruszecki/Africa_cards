@@ -4,9 +4,10 @@ import re
 import logging
 import shutil
 from PIL import Image, ImageDraw, ImageFont
+from selenium import webdriver
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.disable(logging.INFO)
+logging.disable(logging.DEBUG)
 
 logging.debug('Start of a program')
 
@@ -37,8 +38,9 @@ def go(continent):
                 address = find_address(continent, str(country_in_html[0]), name)
                 find_details(continent, address, name)
 
-    return
-
+    for country in continent:
+        if country["name"] == "Kongo":
+            country["area"] = country["area"][:-4]
 
 def print_list_of_dicts(continent):
     for country in continent:
@@ -79,6 +81,7 @@ def find_details(continent, url, name):
 
     label_image = country_page_html.select('#mw-content-text > div.mw-parser-output > table.infobox > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(1) > div > a > img')
     emblem = country_page_html.select('#mw-content-text > div.mw-parser-output > table.infobox > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td:nth-child(2) > a > img')
+
     for i in range(1,15):
         label_link = country_page_html.select('#mw-content-text > div.mw-parser-output > table.infobox > tbody > tr:nth-child(' + str(i) + ') > td:nth-child(1) > a')
         label_not_link = country_page_html.select('#mw-content-text > div.mw-parser-output > table.infobox > tbody > tr:nth-child(' + str(i) + ') > td:nth-child(1)')
@@ -94,6 +97,7 @@ def find_details(continent, url, name):
                         if country['name'] == name:
                             capitals.append(value[j].text)
                             country.update({'capital': capitals})
+
         #print(label_not_link[0].text)
         if "Liczba ludności" in label_not_link[0].text:
             value_ = country_page_html.select('#mw-content-text > div.mw-parser-output > table.infobox > tbody > tr:nth-child(' + str(i) + ') > td:nth-child(2)')
@@ -113,6 +117,8 @@ def find_details(continent, url, name):
                 if country['name'] == name:
                     country.update({'area': amount})
             logging.info("Area: " + amount)
+
+
     flag = flag_regex.findall(str(label_image[0]))
     logging.info(flag[2])
     emblem = flag_regex.findall(str(emblem[0]))
@@ -145,33 +151,88 @@ def draw_a_card():
 
 
 def insert_details(img, country):
-    font            = ImageFont.truetype("fonts/Comfortaa_Regular.ttf", 40)
+    font_name       = ImageFont.truetype("fonts/Bullpen 3D 400.ttf", 70)
+    font_name_small = ImageFont.truetype("fonts/Bullpen 3D 400.ttf", 55)
+    font_details    = ImageFont.truetype("fonts/Bullpen 3D 400.ttf", 40)
     coor_name       = (100, 100)
-    coor_capital    = (100, 500)
-    coor_area       = (100, 600)
-    coor_population = (100, 700)
+    coor_capital    = (100, 550)
+    coor_area       = (100, 650)
+    coor_population = (100, 750)
+    coor_flag       = (100, 250)
+    coor_emblem     = (550, 250)
+    resize_factor   = 1.3
+
+    flag = Image.open('flags/' + country['name'] + '.png')
+    flag = flag.resize((int(flag.width*resize_factor), int(flag.height*resize_factor)))
+    flag_background = Image.new("RGB", (flag.width+4, flag.height+4))
+    flag_background.paste(flag, (2, 2))
+
+    emblem = Image.open('emblems/' + country['name'] + '.png')
+    emblem = emblem.resize((int(emblem.width*resize_factor), int(emblem.height*resize_factor)))
+    emblem.load()
+    emblem_background = Image.new("RGB", emblem.size, (255, 255, 255))
+
+    if len(emblem.split()) == 4:
+        emblem_background.paste(emblem, mask=emblem.split()[3])
+    else:
+        img.paste(emblem, coor_emblem)
 
     draw = ImageDraw.Draw(img)
-    draw.text(coor_name, country['name'], fill=0, font=font)
-    draw.text(coor_capital, 'Stolica: ' + ', '.join(country['capital']), fill=0, font=font)
-    draw.text(coor_area, 'Powierzchnia: ' + country['area'], fill=0, font=font)
-    draw.text(coor_population, 'Liczba ludności: ' + country['population'], fill=0, font=font)
+    img.paste(flag_background, coor_flag)
+    img.paste(emblem_background, coor_emblem)
+    if len(country["name"]) <= 15:
+        draw.text(coor_name, country['name'], fill=0, font=font_name)
+    elif len(country["name"]) <= 20:
+        draw.text(coor_name, country['name'], fill=0, font=font_name_small)
+    elif country["name"] == "Wyspy Świętego Tomasza i Książęca":
+        draw.text(coor_name, "Wyspy Świętego Tomasza \ni Książęca", fill=0, font=font_details)
+    else:
+        draw.text(coor_name, country['name'], fill=0, font=font_details)
+    draw.text(coor_capital, 'Stolica: ' + ', '.join(country['capital']), fill=0, font=font_details)
+    draw.text(coor_area, 'Powierzchnia: ' + country['area'], fill=0, font=font_details)
+    draw.text(coor_population, 'Liczba ludności: ' + country['population'], fill=0, font=font_details)
 
 
-# ²
-# fnt = ImageFont.truetype("fonts/Comfortaa_Regular.ttf", 30)
-# test = draw_a_card()
-# draw = ImageDraw.Draw(test)
-# draw.text((100, 100), "Powierzchnia: 2514 km²", font=fnt, fill=0)
-# test.save("test.png", 'PNG')
+def prepare_qr(img, country):
+    url = 'https://www.the-qrcode-generator.com/'
+    # res = requests.get(url)
+    # res.raise_for_status()
 
+    browswer = webdriver.Chrome()
+    browswer.get(url)
+
+######################################
+
+url = 'https://pl.qr-code-generator.com/'
+# res = requests.get(url)
+# res.raise_for_status()
+
+browswer = webdriver.Chrome()
+browswer.get(url)
+
+text_box = browswer.find_element_by_css_selector('#filedrop-container > app-navigation > div > div > app-form-url > form > div > div > input')
+text_box.send_keys('https://pl.wikipedia.org/wiki/Ghana')
+
+button = browswer.find_element_by_css_selector('#filedrop-container > app-navigation > div > div > app-form-url > form > button')
+button.click()
+
+
+
+######################################
+
+# Zbieranie informacji
 africa = []
 go(africa)
 print_list_of_dicts(africa)
 
+# Przygotowywanie frontu
 for country in africa:
     img = draw_a_card()
     insert_details(img, country)
     img.save("cards/" + country['name'] + ".png", "PNG")
 
-
+# Przygotowywanie plecków
+for country in africa:
+    img = draw_a_card()
+    prepare_qr(img, country)
+    img.save("back/" + country['name'] + ".png", "PNG")
