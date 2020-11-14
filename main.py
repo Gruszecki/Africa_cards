@@ -5,6 +5,7 @@ import logging
 import shutil
 from PIL import Image, ImageDraw, ImageFont
 from selenium import webdriver
+import time
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.disable(logging.DEBUG)
@@ -24,6 +25,7 @@ address_regex = re.compile(r'href="/(wiki/[\w%]*)')
 digit_regex = re.compile(r'>([\d\stys]*)<')
 area_regex = re.compile(r'>([\d\s,]*[\styskm²]*)<')
 flag_regex = re.compile(r'//upload.wikimedia.org/wikipedia/commons/thumb/[\w\d\-_%./]*.png')
+
 
 
 def go(continent):
@@ -193,46 +195,83 @@ def insert_details(img, country):
     draw.text(coor_population, 'Liczba ludności: ' + country['population'], fill=0, font=font_details)
 
 
-def prepare_qr(img, country):
-    url = 'https://www.the-qrcode-generator.com/'
-    # res = requests.get(url)
-    # res.raise_for_status()
+def prepare_qr(continent):
+    url = 'https://www.qr-online.pl/index.php'
 
-    browswer = webdriver.Chrome()
-    browswer.get(url)
+    options = webdriver.ChromeOptions()
+    options.add_argument('--start-maximized')
+    browser = webdriver.Chrome(options=options)
+    browser.get(url)
 
-######################################
+    for country in continent:
+        text_box = browser.find_element_by_css_selector('#qr_url > div.form-group > div > input')
+        text_box.clear()
+        text_box.send_keys(country['url'])
 
-url = 'https://pl.qr-code-generator.com/'
-# res = requests.get(url)
-# res.raise_for_status()
+        size_checkbox = browser.find_element_by_css_selector(
+            '#msgtopdiv > div:nth-child(1) > div.col-md-9 > div.panel.panel-primary > div.panel-body > form > div.form-group > div:nth-child(4) > select')
+        size_checkbox.send_keys('10')
 
-browswer = webdriver.Chrome()
-browswer.get(url)
+        button = browser.find_element_by_css_selector(
+            '#msgtopdiv > div:nth-child(1) > div.col-md-9 > div.panel.panel-primary > div.panel-body > form > div.form-group > div.col-sm-1 > input')
+        button.click()
 
-text_box = browswer.find_element_by_css_selector('#filedrop-container > app-navigation > div > div > app-form-url > form > div > div > input')
-text_box.send_keys('https://pl.wikipedia.org/wiki/Ghana')
+        time.sleep(2)
 
-button = browswer.find_element_by_css_selector('#filedrop-container > app-navigation > div > div > app-form-url > form > button')
-button.click()
+        browser.save_screenshot('qrs/' + country['name'] + '.png')
+
+        qr_code = browser.find_element_by_css_selector(
+            '#msgtopdiv > div:nth-child(1) > div.col-md-9 > div.contentBox > div:nth-child(1) > img')
+        qr_code_location = qr_code.location
+        qr_code_size = qr_code.size
+
+        x = qr_code_location['x']
+        y = qr_code_location['y']
+        width = x + qr_code_size['width']
+        height = y + qr_code_size['height']
+
+        qr_code_image = Image.open('qrs/' + country['name'] + '.png')
+        qr_code_image = qr_code_image.crop((int(x), int(y), int(width), int(height)))
+        qr_code_image.save('qrs/' + country['name'] + '.png')
+
+    browser.close()
 
 
+def insert_qr(img, country):
+    font_signature  = ImageFont.truetype("fonts/AmaticSC-Regular.ttf", 40)
+    coor_signature  = (400, 1250)
+    resize_factor   = 1.3
 
-######################################
+    qr = Image.open('qrs/' + country['name'] + '.png')
+    qr = qr.resize((400, 400))
+    coor_qr = (int(img.width/2 - qr.width/2), 350)
+
+    img.paste(qr, coor_qr)
+
+    draw = ImageDraw.Draw(img)
+    draw.text(coor_signature, "Gruszecki", font=font_signature, fill=0)
+
+
+def prepare_front(continent):
+    for country in continent:
+        img = draw_a_card()
+        insert_details(img, country)
+        img.save("cards/" + country['name'] + ".png", "PNG")
+
+
+def prepare_back(continent):
+    for country in continent:
+        img = draw_a_card()
+        insert_qr(img, country)
+        img.save("back/" + country['name'] + ".png", "PNG")
+
 
 # Zbieranie informacji
 africa = []
 go(africa)
 print_list_of_dicts(africa)
 
-# Przygotowywanie frontu
-for country in africa:
-    img = draw_a_card()
-    insert_details(img, country)
-    img.save("cards/" + country['name'] + ".png", "PNG")
-
-# Przygotowywanie plecków
-for country in africa:
-    img = draw_a_card()
-    prepare_qr(img, country)
-    img.save("back/" + country['name'] + ".png", "PNG")
+# Kreowanie kart
+# prepare_front(africa)
+# prepare_qr(africa)
+prepare_back(africa)
