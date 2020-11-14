@@ -153,9 +153,9 @@ def draw_a_card():
 
 
 def insert_details(img, country):
-    font_name       = ImageFont.truetype("fonts/Bullpen 3D 400.ttf", 70)
-    font_name_small = ImageFont.truetype("fonts/Bullpen 3D 400.ttf", 55)
-    font_details    = ImageFont.truetype("fonts/Bullpen 3D 400.ttf", 40)
+    font_name       = ImageFont.truetype("fonts/huxtable.ttf", 80)     # 70
+    font_name_small = ImageFont.truetype("fonts/huxtable.ttf", 65)     # 55
+    font_details    = ImageFont.truetype("fonts/huxtable.ttf", 50)     # 40
     coor_name       = (100, 100)
     coor_capital    = (100, 550)
     coor_area       = (100, 650)
@@ -170,7 +170,12 @@ def insert_details(img, country):
     flag_background.paste(flag, (2, 2))
 
     emblem = Image.open('emblems/' + country['name'] + '.png')
-    emblem = emblem.resize((int(emblem.width*resize_factor), int(emblem.height*resize_factor)))
+    if country['name'] == 'Botswana':
+        emblem = emblem.resize((int(emblem.width), int(emblem.height)))
+    elif country['name'] == 'Niger':
+        emblem = emblem.resize((int(emblem.width*0.14), int(emblem.height*0.14)))
+    else:
+        emblem = emblem.resize((int(emblem.width*resize_factor), int(emblem.height*resize_factor)))
     emblem.load()
     emblem_background = Image.new("RGB", emblem.size, (255, 255, 255))
 
@@ -182,9 +187,9 @@ def insert_details(img, country):
     draw = ImageDraw.Draw(img)
     img.paste(flag_background, coor_flag)
     img.paste(emblem_background, coor_emblem)
-    if len(country["name"]) <= 15:
+    if len(country["name"]) <= 18:
         draw.text(coor_name, country['name'], fill=0, font=font_name)
-    elif len(country["name"]) <= 20:
+    elif len(country["name"]) <= 23:
         draw.text(coor_name, country['name'], fill=0, font=font_name_small)
     elif country["name"] == "Wyspy Świętego Tomasza i Książęca":
         draw.text(coor_name, "Wyspy Świętego Tomasza \ni Książęca", fill=0, font=font_details)
@@ -272,6 +277,6 @@ go(africa)
 print_list_of_dicts(africa)
 
 # Kreowanie kart
-# prepare_front(africa)
+prepare_front(africa)
 # prepare_qr(africa)
-prepare_back(africa)
+# prepare_back(africa)
