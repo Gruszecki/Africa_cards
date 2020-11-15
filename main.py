@@ -46,6 +46,7 @@ def go(continent):
         if country["name"] == "Kongo":
             country["area"] = country["area"][:-4]
 
+
 def print_list_of_dicts(continent):
     for country in continent:
         print("Name:\t\t" + country["name"])
@@ -177,14 +178,14 @@ def insert_details(img, country):
     font_details    = ImageFont.truetype("fonts/huxtable.ttf", 50)     # 40
     font_motto      = ImageFont.truetype("fonts/huxtable.ttf", 40)     # 40
     coor_name       = (100, 100)
-    coor_capital    = (100, 550)
-    coor_area       = (100, 630)
-    coor_population = (100, 710)
+    coor_capital    = (100, 660)    # 550
+    coor_area       = (100, 740)    # 630
+    coor_population = (100, 820)    # 710
     coor_flag       = (100, 250)
-    coor_emblem     = (550, 250)
+    coor_emblem     = (537, 250)
     coor_map        = (470, 941)
-    coor_motto      = (100, 790)
-    resize_factor   = 1.3
+    coor_motto      = (100, 550)    # 790
+    resize_factor   = 1.4
 
     flag = Image.open('flags/' + country['name'] + '.png')
     emblem = Image.open('emblems/' + country['name'] + '.png')
@@ -199,6 +200,8 @@ def insert_details(img, country):
         emblem = emblem.resize((int(emblem.width), int(emblem.height)))
     elif country['name'] == 'Niger':
         emblem = emblem.resize((int(emblem.width*0.14), int(emblem.height*0.14)))
+    elif country['name'] == 'Tunezja':
+        emblem = emblem.resize((int(emblem.width*1.2), int(emblem.height*1.2)))
     else:
         emblem = emblem.resize((int(emblem.width*resize_factor), int(emblem.height*resize_factor)))
     emblem.load()
@@ -359,6 +362,6 @@ get_motto(africa, 'mottos.txt')
 
 # Kreowanie kart
 prepare_front(africa)
-prepare_back(africa)
+# prepare_back(africa)
 
 # print_list_of_dicts(africa)
