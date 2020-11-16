@@ -191,19 +191,51 @@ def insert_details(img, country):
     emblem = Image.open('emblems/' + country['name'] + '.png')
     map = Image.open('maps/' + country['name'] + '.png')
 
-    flag = flag.resize((int(flag.width*resize_factor), int(flag.height*resize_factor)))
+    if country['name'] == 'Somalia':
+        flag = flag.resize((int(flag.width * 0.8), int(flag.height * 0.8)))
+    if country['name'] == 'Niger':
+        flag = flag.resize((int(flag.width * 1.2), int(flag.height * 1.2)))
+    else:
+        flag = flag.resize((int(flag.width*resize_factor), int(flag.height*resize_factor)))
+
     flag_background = Image.new("RGB", (flag.width+4, flag.height+4))
     flag_background.paste(flag, (2, 2))
     map = map.resize((int(map.width*0.6), int(map.height*0.6)))
 
     if country['name'] == 'Botswana':
-        emblem = emblem.resize((int(emblem.width), int(emblem.height)))
+        emblem = emblem.resize((int(emblem.width*1.2), int(emblem.height*1.2)))
+    elif country['name'] == 'Eswatini':
+        emblem = emblem.resize((int(emblem.width * 1.6), int(emblem.height * 1.6)))
+    elif country['name'] == 'Ghana':
+        emblem = emblem.resize((int(emblem.width * 1.6), int(emblem.height * 1.6)))
     elif country['name'] == 'Niger':
-        emblem = emblem.resize((int(emblem.width*0.14), int(emblem.height*0.14)))
+        emblem = emblem.resize((int(emblem.width*0.17), int(emblem.height*0.17)))
+    elif country['name'] == 'Nigeria':
+        emblem = emblem.resize((int(emblem.width * 1.5), int(emblem.height * 1.5)))
+    elif country['name'] == 'Mauritius':
+        emblem = emblem.resize((int(emblem.width * 1.6), int(emblem.height * 1.6)))
     elif country['name'] == 'Tunezja':
         emblem = emblem.resize((int(emblem.width*1.2), int(emblem.height*1.2)))
+    elif country['name'] == 'Somalia':
+        emblem = emblem.resize((int(emblem.width * 1.8), int(emblem.height * 1.8)))
+    elif country['name'] == 'Wybrzeże Kości Słoniowej':
+        emblem = emblem.resize((int(emblem.width * 1.6), int(emblem.height * 1.6)))
     else:
         emblem = emblem.resize((int(emblem.width*resize_factor), int(emblem.height*resize_factor)))
+
+    emblem_x = int(100 + flag.width + (900 - 100 - flag.width - 50 - emblem.width) / 2)
+
+    if country['name'] == "Tunezja":
+        coor_emblem = (emblem_x, 200)
+    elif country['name'] == "Egipt":
+        coor_emblem = (emblem_x, 200)
+    elif country['name'] == "Gwinea":
+        coor_emblem = (emblem_x, 200)
+    else:
+        coor_emblem = (emblem_x, 250)
+
+
+
     emblem.load()
     emblem_background = Image.new("RGB", emblem.size, card_fill)
 
